@@ -184,9 +184,9 @@ function getCurrentSelectedTabId() {
 
 function renderStatus() {
   let status = 'idle';
-  let statusText = 'Ready to parse';
+  let statusText = 'SYSTEM.IDLE';
   let detailText =
-    'Choose a tab and extract structure, styles, text, and expanded content.';
+    'SELECT TARGET TAB. PARSE PAGE STRUCTURE. COPY CLEAN JSON.';
 
   if (viewState.parseState && viewState.parseState.status) {
     status = viewState.parseState.status;
@@ -195,13 +195,13 @@ function renderStatus() {
   if (status === 'running') {
     statusText = viewState.parseState.stageLabel || 'Parsing page';
     detailText =
-      'Pagex is expanding disclosure controls, inspecting frames, and building JSON.';
+      'EXPANDING HIDDEN CONTENT. COLLECTING DOM. WRITING PAYLOAD.';
   }
 
   if (status === 'completed') {
-    statusText = 'Parse complete';
+    statusText = 'PARSE.COMPLETE';
     detailText =
-      'The payload is ready. Click Copy JSON to move the structured result into your clipboard.';
+      'PAYLOAD READY. PRESS COPY.JSON.';
 
     const mismatchMessage = getResultMismatchMessage(
       viewState.parseState,
@@ -214,8 +214,8 @@ function renderStatus() {
   }
 
   if (status === 'error') {
-    statusText = 'Parse failed';
-    detailText = viewState.parseState.errorMessage || 'The selected tab could not be parsed.';
+    statusText = 'PARSE.FAILED';
+    detailText = viewState.parseState.errorMessage || 'TARGET PAGE COULD NOT BE PARSED.';
   }
 
   elements.app.dataset.status = status;
@@ -227,19 +227,19 @@ function renderSummary() {
   resetMetricValues();
 
   if (!viewState.parseState) {
-    elements.summaryNote.textContent = 'No parse result yet.';
+    elements.summaryNote.textContent = 'NO PAYLOAD CAPTURED.';
     return;
   }
 
   if (viewState.parseState.status === 'running') {
     elements.summaryNote.textContent =
-      'Parsing is running in the background. You can keep this popup open or reopen it later.';
+      'ACTIVE TASK. KEEP WINDOW OPEN OR RETURN LATER.';
     return;
   }
 
   if (viewState.parseState.status === 'error') {
     elements.summaryNote.textContent =
-      viewState.parseState.errorMessage || 'The page could not be parsed.';
+      viewState.parseState.errorMessage || 'TARGET PAGE COULD NOT BE PARSED.';
     return;
   }
 
@@ -250,7 +250,7 @@ function renderSummary() {
   );
 
   if (!summary) {
-    elements.summaryNote.textContent = 'No parse summary is available yet.';
+    elements.summaryNote.textContent = 'NO PAYLOAD SUMMARY AVAILABLE.';
     return;
   }
 
@@ -307,11 +307,11 @@ function renderButtons() {
   elements.copyButton.disabled = !canCopy;
 
   if (running) {
-    elements.parseButton.textContent = 'Parsing...';
+    elements.parseButton.textContent = 'PARSING...';
     return;
   }
 
-  elements.parseButton.textContent = 'Parse';
+  elements.parseButton.textContent = 'PARSE';
 }
 
 async function handleParseClick() {
@@ -329,16 +329,16 @@ async function handleParseClick() {
 
   if (!Number.isInteger(selectedTabId) || selectedTabId <= 0) {
     elements.app.dataset.status = 'error';
-    elements.statusText.textContent = 'No tab selected';
-    elements.detailText.textContent = 'Choose a valid tab before starting the parse.';
+    elements.statusText.textContent = 'TARGET.MISSING';
+    elements.detailText.textContent = 'SELECT A VALID TAB BEFORE PARSE.';
     return;
   }
 
   viewState.isStartingParse = true;
   elements.app.dataset.status = 'running';
-  elements.statusText.textContent = 'Starting parse';
+  elements.statusText.textContent = 'START.PARSE';
   elements.detailText.textContent =
-    'Pagex is sending the selected tab to the background parser.';
+    'SENDING TARGET TAB TO PARSER.';
   renderButtons();
   resetCopyFeedback();
 
@@ -347,9 +347,9 @@ async function handleParseClick() {
 
     if (!permissionGranted) {
       elements.app.dataset.status = 'error';
-      elements.statusText.textContent = 'Permission required';
+      elements.statusText.textContent = 'PERMISSION.REQUIRED';
       elements.detailText.textContent =
-        'Pagex needs site access for the selected tab before it can parse this page.';
+        'ALLOW SITE ACCESS FOR THIS ORIGIN BEFORE PARSE.';
       return;
     }
 
@@ -363,17 +363,17 @@ async function handleParseClick() {
     }
 
     elements.app.dataset.status = 'error';
-    elements.statusText.textContent = 'Parse failed';
+    elements.statusText.textContent = 'PARSE.FAILED';
 
     if (response && response.errorMessage) {
       elements.detailText.textContent = response.errorMessage;
     } else {
-      elements.detailText.textContent = 'The parser could not start for this tab.';
+      elements.detailText.textContent = 'PARSER COULD NOT START FOR THIS TAB.';
     }
   } catch (error) {
     elements.app.dataset.status = 'error';
-    elements.statusText.textContent = 'Parse failed';
-    elements.detailText.textContent = 'The parser request could not be delivered.';
+    elements.statusText.textContent = 'PARSE.FAILED';
+    elements.detailText.textContent = 'PARSER REQUEST COULD NOT BE DELIVERED.';
   } finally {
     viewState.isStartingParse = false;
     renderButtons();
@@ -423,7 +423,7 @@ async function handleCopyClick() {
 
   const formatted = formatResultForCopy(viewState.parseState.result);
   await navigator.clipboard.writeText(formatted);
-  setCopyFeedback('Copied JSON to clipboard.');
+  setCopyFeedback('COPY COMPLETE.');
 }
 
 function setCopyFeedback(text) {
@@ -442,5 +442,5 @@ function setCopyFeedback(text) {
 
 function resetCopyFeedback() {
   elements.copyFeedback.textContent =
-    'The copied payload is formatted JSON for AI processing.';
+    'LOCAL OUTPUT. NO REMOTE SEND.';
 }

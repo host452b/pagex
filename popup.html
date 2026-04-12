@@ -9,27 +9,35 @@
   <body>
     <main class="app" id="app" data-status="idle">
       <header class="hero">
-        <div class="hero__halo" aria-hidden="true"></div>
-        <div class="hero__status">
-          <span class="hero__pulse" aria-hidden="true"></span>
-          <span id="statusText">Ready to parse</span>
+        <div class="hero__row">
+          <span class="hero__flag">SYSTEM.INFORMATION</span>
+          <span class="hero__status" id="statusText">SYSTEM.IDLE</span>
         </div>
-        <div class="hero__check" aria-hidden="true">✓</div>
-        <h1 class="hero__title">Pagex</h1>
+        <div class="hero__brand">
+          <img
+            class="hero__logo"
+            src="assets/icons/pagex-128.png"
+            alt="Pagex PX logo"
+          />
+          <div class="hero__identity">
+            <span class="hero__label">PAGE EXTRACTION / JSON OUTPUT</span>
+            <h1 class="hero__title">PAGEX</h1>
+          </div>
+        </div>
         <p class="hero__subtitle" id="detailText">
-          Choose a tab and extract structure, styles, text, and expanded content.
+          SELECT TARGET TAB. PARSE PAGE STRUCTURE. COPY CLEAN JSON.
         </p>
       </header>
 
       <section class="panel">
         <label class="field" for="tabSelect">
-          <span class="field__label">Target tab</span>
+          <span class="field__label">TARGET.TAB</span>
           <select id="tabSelect" class="field__input"></select>
         </label>
 
         <div class="actions">
           <button id="parseBtn" class="button button--primary" type="button">
-            Parse
+            PARSE
           </button>
           <button
             id="copyBtn"
@@ -37,38 +45,39 @@
             type="button"
             disabled
           >
-            Copy JSON
+            COPY.JSON
           </button>
         </div>
       </section>
 
       <section class="summary">
+        <div class="summary__header">PAYLOAD.METRICS</div>
         <div class="summary__grid">
           <article class="metric">
-            <span class="metric__label">Frames</span>
+            <span class="metric__label">FRAMES</span>
             <strong class="metric__value" id="framesValue">-</strong>
           </article>
           <article class="metric">
-            <span class="metric__label">Elements</span>
+            <span class="metric__label">ELEMENTS</span>
             <strong class="metric__value" id="elementsValue">-</strong>
           </article>
           <article class="metric">
-            <span class="metric__label">Clicks</span>
+            <span class="metric__label">CLICKS</span>
             <strong class="metric__value" id="clicksValue">-</strong>
           </article>
           <article class="metric">
-            <span class="metric__label">Size</span>
+            <span class="metric__label">BYTES</span>
             <strong class="metric__value" id="sizeValue">-</strong>
           </article>
         </div>
         <p class="summary__note" id="summaryNote">
-          No parse result yet.
+          NO PAYLOAD CAPTURED.
         </p>
       </section>
 
       <footer class="footer">
         <span class="footer__hint" id="copyFeedback">
-          The copied payload is formatted JSON for AI processing.
+          LOCAL OUTPUT. NO REMOTE SEND.
         </span>
       </footer>
     </main>

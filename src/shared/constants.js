@@ -5,11 +5,11 @@ export const PAGEX_MESSAGE_TYPES = {
 };
 
 export const PAGEX_STAGE_LABELS = {
-  PREPARING: 'Preparing selected tab',
-  INJECTING: 'Injecting collector into page',
-  COLLECTING: 'Collecting structure, styles, and hidden content',
-  INSPECTING: 'Inspecting frame coverage',
-  FINALIZING: 'Building final JSON payload',
+  PREPARING: 'TARGET.CHECK',
+  INJECTING: 'INJECT.COLLECTOR',
+  COLLECTING: 'EXPAND + PARSE',
+  INSPECTING: 'FRAME.SCAN',
+  FINALIZING: 'BUILD.JSON',
 };
 
 export const PAGEX_PARSE_OPTIONS = Object.freeze({

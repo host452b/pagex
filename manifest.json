@@ -17,9 +17,19 @@
     "service_worker": "background.js",
     "type": "module"
   },
+  "icons": {
+    "16": "assets/icons/pagex-16.png",
+    "32": "assets/icons/pagex-32.png",
+    "48": "assets/icons/pagex-48.png",
+    "128": "assets/icons/pagex-128.png"
+  },
   "action": {
     "default_title": "Pagex",
-    "default_popup": "popup.html"
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "assets/icons/pagex-16.png",
+      "32": "assets/icons/pagex-32.png"
+    }
   },
   "minimum_chrome_version": "116"
 }

@@ -21,3 +21,21 @@ test('manifest requests broad site access only through optional host permissions
     'expected optional_host_permissions to include <all_urls>',
   );
 });
+
+test('manifest declares extension icons for runtime and store compliance', async () => {
+  const manifestPath = path.join(process.cwd(), 'manifest.json');
+  const manifestSource = await readFile(manifestPath, 'utf8');
+  const manifest = JSON.parse(manifestSource);
+
+  assert.deepEqual(manifest.icons, {
+    16: 'assets/icons/pagex-16.png',
+    32: 'assets/icons/pagex-32.png',
+    48: 'assets/icons/pagex-48.png',
+    128: 'assets/icons/pagex-128.png',
+  });
+
+  assert.deepEqual(manifest.action.default_icon, {
+    16: 'assets/icons/pagex-16.png',
+    32: 'assets/icons/pagex-32.png',
+  });
+});
