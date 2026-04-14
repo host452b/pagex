@@ -7,7 +7,7 @@ Pagex is a Chrome Manifest V3 extension that extracts the current page into AI-f
 ## Features / 功能
 
 - 在 popup 中选择目标 tab / choose the target tab from the popup
-- 点击 `Parse` 后执行增强但带保护的页面采集 / click `Parse` to run an aggressive but guarded collection pass
+- 点击 `Extract Page` 后执行增强但带保护的页面采集 / click `Extract Page` to run an aggressive but guarded collection pass
 - 自动展开常见折叠内容，如 `details`、`aria-expanded="false"` 和常见 accordion 控件 / expand common disclosure patterns such as `details`, `aria-expanded="false"`, and common accordion controls
 - 通过自动滚动触发部分 lazy-loaded 内容 / trigger lazy-loaded content by auto-scrolling the page
 - 采集 DOM 与 shadow DOM，并输出结构化 JSON / collect DOM and shadow DOM nodes into structured JSON
@@ -28,19 +28,20 @@ Pagex is a Chrome Manifest V3 extension that extracts the current page into AI-f
 
 ## Install / 安装
 
-1. 打开 Chrome 并访问 `chrome://extensions`。Open Chrome and go to `chrome://extensions`.
-2. 开启 `Developer mode`。Enable `Developer mode`.
-3. 点击 `Load unpacked`。Click `Load unpacked`.
-4. 选择当前项目目录。Select this project folder.
+1. 先运行 `npm run generate:store-assets` 生成图标与商店素材。Run `npm run generate:store-assets` first to generate icons and store assets.
+2. 打开 Chrome 并访问 `chrome://extensions`。Open Chrome and go to `chrome://extensions`.
+3. 开启 `Developer mode`。Enable `Developer mode`.
+4. 点击 `Load unpacked`。Click `Load unpacked`.
+5. 选择当前项目目录。Select this project folder.
 
 ## Use / 使用
 
 1. 打开你想解析的网页。Open the page you want to parse.
 2. 点击 `Pagex` 插件图标。Click the `Pagex` extension icon.
 3. 在下拉框中选择目标 tab。Choose the target tab in the dropdown.
-4. 点击 `Parse`。Click `Parse`.
+4. 点击 `Extract Page`。Click `Extract Page`.
 5. 如果 Chrome 弹出权限请求，允许当前站点访问。Approve the site access prompt if Chrome asks for it.
-6. 等待 popup 显示成功状态。Wait until the popup shows the success state.
+6. 等待 popup 显示成功状态，提取过程中会有进度条指示。Wait until the popup shows the success state — a progress bar indicates extraction activity.
 7. 点击 `Copy JSON` 复制结构化结果。Click `Copy JSON` to copy the structured payload.
 
 ## Local Fixture / 本地验证页
@@ -51,7 +52,7 @@ You can manually verify the collector with `fixtures/demo-page.html`.
 
 1. 在 Chrome 中打开 `fixtures/demo-page.html`。Open `fixtures/demo-page.html` in Chrome.
 2. 如果 Chrome 阻止插件访问本地文件，请在扩展详情中启用 `Allow access to file URLs`。If Chrome blocks extension access on local files, enable `Allow access to file URLs` for the extension.
-3. 执行 `Parse`，确认结果包含以下内容。Run `Parse` and check that the output includes:
+3. 执行 `Extract Page`，确认结果包含以下内容。Run `Extract Page` and check that the output includes:
    - 原生 `details` 内容 / details content
    - `Read more` 展开内容 / `Read more` expanded content
    - fragment collapse link 展开内容 / fragment collapse link content
@@ -121,9 +122,11 @@ By default, this generates:
 
 Current brand direction:
 
-- `PX` 双字母 `16-bit / pixel-art` logo
-- `Brutalist / 粗野主义` 黑白系统信息风格
-- 纯黑白、高对比、等宽字体、粗边框
+- `PX` 双字母衬线体标志，红色底色 + 奶白字体，圆角方形 / `PX` serif lettermark on red accent (#ab3a2c) rounded square
+- 奶白纸面、衬线字体、红色批注色 / warm cream paper, serif fonts, red annotation accent
+- 零学习成本的交互文案：分步引导、操作导向、状态提示 / zero-learning-cost UI copy: step-by-step guidance, action-oriented, state-aware hints
+- 交互打磨：平滑状态过渡（200ms）、按钮按压反馈、内联进度条、复制成功动画 / interaction polish: smooth state transitions (200ms), button press feedback, inline progress bar, copy success animation
+- 无障碍支持：键盘焦点环、`aria-live` 状态播报、`prefers-reduced-motion` 适配 / accessibility: focus-visible rings, aria-live announcements, reduced-motion support
 
 ## Notes / 注意事项
 
