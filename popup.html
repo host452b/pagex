@@ -10,8 +10,8 @@
     <main class="app" id="app" data-status="idle">
       <header class="hero">
         <div class="hero__row">
-          <span class="hero__flag">SYSTEM.INFORMATION</span>
-          <span class="hero__status" id="statusText">SYSTEM.IDLE</span>
+          <span class="hero__flag">Editor's note</span>
+          <span class="hero__status" id="statusText">Ready</span>
         </div>
         <div class="hero__brand">
           <img
@@ -20,24 +20,25 @@
             alt="Pagex PX logo"
           />
           <div class="hero__identity">
-            <span class="hero__label">PAGE EXTRACTION / JSON OUTPUT</span>
-            <h1 class="hero__title">PAGEX</h1>
+            <span class="hero__label">Page reading for careful AI work</span>
+            <h1 class="hero__title">Pagex</h1>
           </div>
         </div>
         <p class="hero__subtitle" id="detailText">
-          SELECT TARGET TAB. PARSE PAGE STRUCTURE. COPY CLEAN JSON.
+          Select a tab, reveal what matters, and copy a quieter JSON record.
         </p>
+        <div class="hero__progress" role="progressbar" aria-label="Parse progress"></div>
       </header>
 
       <section class="panel">
         <label class="field" for="tabSelect">
-          <span class="field__label">TARGET.TAB</span>
+          <span class="field__label">Selected page</span>
           <select id="tabSelect" class="field__input"></select>
         </label>
 
         <div class="actions">
           <button id="parseBtn" class="button button--primary" type="button">
-            PARSE
+            Parse
           </button>
           <button
             id="copyBtn"
@@ -45,39 +46,39 @@
             type="button"
             disabled
           >
-            COPY.JSON
+            Copy JSON
           </button>
         </div>
       </section>
 
       <section class="summary">
-        <div class="summary__header">PAYLOAD.METRICS</div>
+        <div class="summary__header">Reading notes</div>
         <div class="summary__grid">
           <article class="metric">
-            <span class="metric__label">FRAMES</span>
+            <span class="metric__label">Frames</span>
             <strong class="metric__value" id="framesValue">-</strong>
           </article>
           <article class="metric">
-            <span class="metric__label">ELEMENTS</span>
+            <span class="metric__label">Elements</span>
             <strong class="metric__value" id="elementsValue">-</strong>
           </article>
           <article class="metric">
-            <span class="metric__label">CLICKS</span>
+            <span class="metric__label">Clicks</span>
             <strong class="metric__value" id="clicksValue">-</strong>
           </article>
           <article class="metric">
-            <span class="metric__label">BYTES</span>
+            <span class="metric__label">Size</span>
             <strong class="metric__value" id="sizeValue">-</strong>
           </article>
         </div>
         <p class="summary__note" id="summaryNote">
-          NO PAYLOAD CAPTURED.
+          No captured page yet.
         </p>
       </section>
 
       <footer class="footer">
         <span class="footer__hint" id="copyFeedback">
-          LOCAL OUTPUT. NO REMOTE SEND.
+          Local only. Nothing is sent away.
         </span>
       </footer>
     </main>
