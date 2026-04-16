@@ -8,34 +8,51 @@
 
 ## Short summary
 
-Extract page structure, hidden content, and style-aware text into clean JSON for AI workflows.
+Extract page content into AI-ready JSON, capture full-page screenshots, and export cookies — all offline.
 
 ## Full description
 
-Pagex is a Chrome extension for turning the current page into structured, AI-ready JSON.
+Pagex is a Chrome extension that extracts page content into structured JSON, captures full-page screenshots, and exports cookies — all locally, without sending data anywhere.
 
 It helps you collect visible content, hidden content, expandable sections, frame results, and lightweight style context without copying raw HTML by hand. The extension is built for people who need to move web content into AI, automation, or internal analysis workflows with a cleaner and more controlled payload.
 
 ### What Pagex does
 
+**Page extraction**
 - Parse the selected tab directly from the popup
 - Expand common disclosure patterns such as `details`, `aria-expanded="false"`, and fragment-based collapse controls
-- Trigger some lazy-loaded content by scrolling before extraction
+- Trigger lazy-loaded content by scrolling before extraction
 - Collect DOM and shadow DOM nodes into structured JSON
 - Merge accessible frame results and label skipped or failed frames clearly
-- Filter sensitive attributes and remove query strings and hashes from exported `href` and `src` values
-- Copy the final payload in one click
+- Filter sensitive attributes and remove query strings and hashes from exported values
+- Download the final payload as a JSON file
+- Stop a running extraction and retry at any time
+- Live countdown showing estimated time remaining per stage
+
+**Full-page screenshot**
+- Capture the entire scrollable page as a stitched PNG
+- Automatically handle SPA pages with non-document scrolling containers
+- Hide scrollbars and neutralize fixed/sticky elements for clean output
+- Wait for lazy-loaded images before each capture
+- Scale down automatically for very long pages (Chrome canvas limits)
+- No extra permissions needed — uses existing activeTab + scripting
+
+**Cookie and storage export**
+- Export all cookies for the selected tab in Netscape cookies.txt format (curl/wget compatible)
+- Include localStorage and sessionStorage data in the export
+- Works with any site you have permission to access
+- Output header clearly states data never leaves your device
 
 ### Why it is useful
 
 - Cleaner input for AI than copying raw page source
-- Better support for hidden and expandable content
-- Safer default export with compact structure and filtered attributes
-- Local-first workflow for page extraction and clipboard handoff
+- Full-page screenshots that work on complex SPA and ad-heavy pages
+- Cookie export for debugging, testing, and automation workflows
+- Everything runs locally — no data is ever sent to a server
 
 ### Output highlights
 
-The exported payload can include:
+The exported JSON payload can include:
 
 - Page title and URL
 - Frame metadata
@@ -49,10 +66,11 @@ The exported payload can include:
 
 - `activeTab`: lets Pagex work with the selected page
 - `scripting`: injects the collector into the selected tab
+- `cookies`: reads cookies for the selected tab when you click "Get cookies.txt"
 - `storage`: stores parse status and result metadata in the extension session
 - `tabs`: reads the selected tab information in the popup
 - `webNavigation`: checks frame coverage for the current tab
-- optional host access: requested only when you parse a selected site origin
+- optional host access: requested only when you interact with a selected site origin
 
 ## Suggested screenshots
 
