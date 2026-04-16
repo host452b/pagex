@@ -6,6 +6,7 @@
   "scripts": {
     "test": "node --test",
     "package": "node scripts/package-extension.mjs",
+    "release": "npm run package && bash scripts/prepare-release.sh",
     "generate:store-assets": "node scripts/generate-store-assets.mjs"
   },
   "devDependencies": {
