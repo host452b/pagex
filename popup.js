@@ -491,6 +491,15 @@ async function handleScreenshotClick() {
     await chrome.tabs.update(selectedTabId, { active: true });
     await delay(200);
 
+    // Phase 0: Hide scrollbars so they don't appear in captures.
+    const scrollbarCSS =
+      '::-webkit-scrollbar{display:none!important}*{scrollbar-width:none!important}';
+
+    await chrome.scripting.insertCSS({
+      target: { tabId: selectedTabId },
+      css: scrollbarCSS,
+    });
+
     // Phase 1: Measure page and unfold non-document scrollable containers.
     // Many SPAs use overflow:hidden on html/body with a scrollable child div,
     // and intermediate wrappers (#root, .layout) that constrain height.
@@ -644,6 +653,8 @@ async function handleScreenshotClick() {
     const drawHeight = Math.round(dims.viewportHeight * scale);
 
     // Phase 4: Scroll-and-capture loop — draw each frame immediately.
+    // After the first frame, position:fixed/sticky elements are hidden so
+    // headers and floating bars don't duplicate across every viewport slice.
     for (let i = 0; i < positions.length; i++) {
       elements.screenshotButton.textContent =
         `Capturing ${i + 1}/${positions.length}...`;
@@ -655,6 +666,28 @@ async function handleScreenshotClick() {
       });
 
       await delay(300);
+
+      // Wait longer if images near the viewport are still loading.
+      const [{ result: hasLoading }] = await chrome.scripting.executeScript({
+        target: { tabId: selectedTabId },
+        func: () => {
+          const vh = window.innerHeight;
+
+          for (const img of document.querySelectorAll('img[src]')) {
+            const r = img.getBoundingClientRect();
+
+            if (r.bottom > 0 && r.top < vh * 2 && !img.complete) {
+              return true;
+            }
+          }
+
+          return false;
+        },
+      });
+
+      if (hasLoading) {
+        await delay(1200);
+      }
 
       const dataUrl = await chrome.tabs.captureVisibleTab(null, {
         format: 'png',
@@ -668,15 +701,46 @@ async function handleScreenshotClick() {
       const img = await loadImage(dataUrl);
       const drawY = Math.round(actualY * scale);
       ctx.drawImage(img, 0, drawY, drawWidth, drawHeight);
+
+      // After the first capture, hide fixed/sticky elements so they only
+      // appear once at the top of the stitched image.
+      if (i === 0 && positions.length > 1) {
+        await chrome.scripting.executeScript({
+          target: { tabId: selectedTabId },
+          func: () => {
+            window.__pagexFixedEls = [];
+
+            for (const el of document.querySelectorAll('*')) {
+              const pos = getComputedStyle(el).position;
+
+              if (pos === 'fixed' || pos === 'sticky') {
+                window.__pagexFixedEls.push({
+                  el,
+                  vis: el.style.visibility,
+                });
+                el.style.setProperty('visibility', 'hidden', 'important');
+              }
+            }
+          },
+        });
+      }
     }
 
-    // Phase 5: Restore original page styles and scroll position.
+    // Phase 5: Restore fixed/sticky elements, page styles, scrollbar, scroll.
     await chrome.scripting.executeScript({
       target: { tabId: selectedTabId },
       func: (origX, origY) => {
-        const saved = window.__pagexSaved || [];
+        for (const { el, vis } of window.__pagexFixedEls || []) {
+          if (vis) {
+            el.style.visibility = vis;
+          } else {
+            el.style.removeProperty('visibility');
+          }
+        }
 
-        for (const entry of saved) {
+        delete window.__pagexFixedEls;
+
+        for (const entry of window.__pagexSaved || []) {
           entry.el.style.cssText = entry.css;
         }
 
@@ -684,6 +748,11 @@ async function handleScreenshotClick() {
         window.scrollTo(origX, origY);
       },
       args: [dims.originalScrollX, dims.originalScrollY],
+    });
+
+    await chrome.scripting.removeCSS({
+      target: { tabId: selectedTabId },
+      css: scrollbarCSS,
     });
 
     elements.screenshotButton.textContent = 'Saving...';
@@ -711,6 +780,41 @@ async function handleScreenshotClick() {
   } catch (error) {
     setToolsFeedback('Screenshot failed — try again or check tab permissions.');
   } finally {
+    // Best-effort page cleanup — the tab may already be closed.
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId: selectedTabId },
+        func: () => {
+          for (const { el, vis } of window.__pagexFixedEls || []) {
+            if (vis) {
+              el.style.visibility = vis;
+            } else {
+              el.style.removeProperty('visibility');
+            }
+          }
+
+          delete window.__pagexFixedEls;
+
+          for (const entry of window.__pagexSaved || []) {
+            entry.el.style.cssText = entry.css;
+          }
+
+          delete window.__pagexSaved;
+        },
+      });
+    } catch {
+      // Tab gone or permissions revoked — nothing to restore.
+    }
+
+    try {
+      await chrome.scripting.removeCSS({
+        target: { tabId: selectedTabId },
+        css: scrollbarCSS,
+      });
+    } catch {
+      // Same — safe to ignore.
+    }
+
     viewState.isCapturingScreenshot = false;
     elements.screenshotButton.disabled = false;
     elements.screenshotButton.textContent = 'Screenshot Full Page';
@@ -744,7 +848,38 @@ async function handleCookiesClick() {
     }
 
     const cookies = await chrome.cookies.getAll({ url: tab.url });
-    const text = formatCookiesTxt(cookies);
+
+    // Also collect localStorage and sessionStorage via content script.
+    let storage = null;
+
+    try {
+      const [{ result }] = await chrome.scripting.executeScript({
+        target: { tabId: selectedTabId },
+        func: () => {
+          const local = {};
+
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            local[key] = localStorage.getItem(key);
+          }
+
+          const session = {};
+
+          for (let i = 0; i < sessionStorage.length; i++) {
+            const key = sessionStorage.key(i);
+            session[key] = sessionStorage.getItem(key);
+          }
+
+          return { localStorage: local, sessionStorage: session };
+        },
+      });
+
+      storage = result;
+    } catch {
+      // Content script may fail on restricted pages — cookies still export.
+    }
+
+    const text = formatCookiesTxt(cookies, storage);
     const blob = new Blob([text], { type: 'text/plain' });
 
     let hostname = 'site';
@@ -757,8 +892,18 @@ async function handleCookiesClick() {
 
     downloadBlob(blob, `cookies-${hostname}.txt`);
 
-    const count = cookies.length;
-    setToolsFeedback(`Exported ${count} cookie${count === 1 ? '' : 's'}.`);
+    const cookieCount = cookies.length;
+    const storageCount = storage
+      ? Object.keys(storage.localStorage || {}).length +
+        Object.keys(storage.sessionStorage || {}).length
+      : 0;
+    const parts = [`${cookieCount} cookie${cookieCount === 1 ? '' : 's'}`];
+
+    if (storageCount > 0) {
+      parts.push(`${storageCount} storage item${storageCount === 1 ? '' : 's'}`);
+    }
+
+    setToolsFeedback(`Exported ${parts.join(' + ')}.`);
   } catch {
     setToolsFeedback('Could not export cookies — check tab permissions.');
   } finally {

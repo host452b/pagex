@@ -175,3 +175,71 @@ test('preserves special characters in cookie values', () => {
 
   assert.equal(fields[6], 'hello=world&foo=bar%20baz');
 });
+
+test('appends localStorage section when storage is provided', () => {
+  const cookies = [];
+  const storage = {
+    localStorage: { theme: 'dark', lang: 'en' },
+    sessionStorage: {},
+  };
+
+  const result = formatCookiesTxt(cookies, storage);
+
+  assert.ok(result.includes('# --- localStorage ---'));
+  assert.ok(result.includes('theme\tdark'));
+  assert.ok(result.includes('lang\ten'));
+  assert.ok(!result.includes('# --- sessionStorage ---'));
+});
+
+test('appends sessionStorage section when storage is provided', () => {
+  const cookies = [];
+  const storage = {
+    localStorage: {},
+    sessionStorage: { token: 'abc123' },
+  };
+
+  const result = formatCookiesTxt(cookies, storage);
+
+  assert.ok(!result.includes('# --- localStorage ---'));
+  assert.ok(result.includes('# --- sessionStorage ---'));
+  assert.ok(result.includes('token\tabc123'));
+});
+
+test('includes both storage sections alongside cookies', () => {
+  const cookies = [
+    {
+      domain: '.example.com',
+      path: '/',
+      secure: false,
+      expirationDate: 1000,
+      name: 'sid',
+      value: 'x',
+    },
+  ];
+  const storage = {
+    localStorage: { pref: '1' },
+    sessionStorage: { tmp: '2' },
+  };
+
+  const result = formatCookiesTxt(cookies, storage);
+  const lines = result.split('\n').filter((l) => l.trim());
+
+  assert.ok(lines.some((l) => l.startsWith('.example.com')));
+  assert.ok(lines.some((l) => l === 'pref\t1'));
+  assert.ok(lines.some((l) => l === 'tmp\t2'));
+});
+
+test('omits storage sections when storage is null or undefined', () => {
+  const result1 = formatCookiesTxt([], null);
+  const result2 = formatCookiesTxt([]);
+
+  assert.ok(!result1.includes('localStorage'));
+  assert.ok(!result2.includes('localStorage'));
+});
+
+test('omits storage sections when both are empty objects', () => {
+  const result = formatCookiesTxt([], { localStorage: {}, sessionStorage: {} });
+
+  assert.ok(!result.includes('# --- localStorage ---'));
+  assert.ok(!result.includes('# --- sessionStorage ---'));
+});
