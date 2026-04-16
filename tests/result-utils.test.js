@@ -78,3 +78,43 @@ test('sortTabsForPicker keeps the active tab first and normalizes labels', () =>
   assert.equal(sorted[0].label, 'Dashboard - example.com');
   assert.equal(sorted[1].label, 'Untitled tab - no-url');
 });
+
+test('buildResultSummary labels 0 bytes correctly', () => {
+  const result = {
+    resultSizeBytes: 0,
+    frames: [],
+  };
+
+  const summary = buildResultSummary(result);
+
+  assert.equal(summary.resultSizeBytes, 0);
+  assert.equal(summary.resultSizeLabel, '0 B');
+  assert.equal(summary.frameCount, 0);
+  assert.equal(summary.elementCount, 0);
+});
+
+test('buildResultSummary handles frames with missing stats gracefully', () => {
+  const result = {
+    resultSizeBytes: 100,
+    frames: [
+      { frameId: 0, skipped: false, warnings: [] },
+    ],
+  };
+
+  const summary = buildResultSummary(result);
+
+  assert.equal(summary.elementCount, 0);
+  assert.equal(summary.totalClicks, 0);
+  assert.equal(summary.accessibleFrameCount, 1);
+});
+
+test('sortTabsForPicker returns empty array for empty input', () => {
+  const sorted = sortTabsForPicker([], 0);
+
+  assert.deepEqual(sorted, []);
+});
+
+test('formatResultForCopy handles null and empty objects', () => {
+  assert.equal(formatResultForCopy(null), 'null');
+  assert.equal(formatResultForCopy({}), '{}');
+});

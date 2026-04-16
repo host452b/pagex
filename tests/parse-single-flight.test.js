@@ -32,3 +32,39 @@ test('createParseSingleFlight rejects concurrent starts until the active request
   assert.equal(third.ok, true);
   assert.equal(gate.getActive().requestId, 'req-3');
 });
+
+test('finish with mismatched requestId is a no-op', () => {
+  const gate = createParseSingleFlight();
+
+  gate.start({ requestId: 'req-A', tabId: 1 });
+  gate.finish('req-WRONG');
+
+  assert.equal(gate.getActive().requestId, 'req-A');
+});
+
+test('finish when nothing is active is a no-op', () => {
+  const gate = createParseSingleFlight();
+
+  gate.finish('req-none');
+
+  assert.equal(gate.getActive(), null);
+});
+
+test('getActive returns null when no parse is active', () => {
+  const gate = createParseSingleFlight();
+
+  assert.equal(gate.getActive(), null);
+});
+
+test('independent instances do not share state', () => {
+  const gateA = createParseSingleFlight();
+  const gateB = createParseSingleFlight();
+
+  gateA.start({ requestId: 'a1', tabId: 10 });
+
+  const bStart = gateB.start({ requestId: 'b1', tabId: 20 });
+
+  assert.equal(bStart.ok, true);
+  assert.equal(gateA.getActive().requestId, 'a1');
+  assert.equal(gateB.getActive().requestId, 'b1');
+});

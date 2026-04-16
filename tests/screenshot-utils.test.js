@@ -72,3 +72,22 @@ test('covers the entire page height', () => {
     'last capture reaches the bottom',
   );
 });
+
+test('handles floating-point dimensions without crashing', () => {
+  const positions = calculateScrollPositions(1500.7, 900.3);
+
+  assert.ok(positions.length >= 1);
+  assert.equal(positions[0], 0);
+});
+
+test('handles very large page height', () => {
+  const positions = calculateScrollPositions(100000, 900);
+
+  assert.equal(positions[0], 0);
+  assert.equal(positions[positions.length - 1], 100000 - 900);
+  assert.ok(positions.length > 100);
+});
+
+test('returns single position when scrollHeight is 1', () => {
+  assert.deepEqual(calculateScrollPositions(1, 1000), [0]);
+});

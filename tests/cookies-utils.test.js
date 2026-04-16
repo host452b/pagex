@@ -243,3 +243,36 @@ test('omits storage sections when both are empty objects', () => {
   assert.ok(!result.includes('# --- localStorage ---'));
   assert.ok(!result.includes('# --- sessionStorage ---'));
 });
+
+test('handles cookie with empty name and value', () => {
+  const result = formatCookiesTxt([
+    {
+      domain: '.example.com',
+      path: '/',
+      secure: false,
+      expirationDate: 1000,
+      name: '',
+      value: '',
+    },
+  ]);
+
+  const dataLine = result.split('\n').find((l) => l.startsWith('.example'));
+
+  assert.ok(dataLine);
+  assert.equal(dataLine.split('\t').length, 7);
+});
+
+test('output always ends with a trailing newline', () => {
+  const result = formatCookiesTxt([
+    {
+      domain: '.a.com',
+      path: '/',
+      secure: false,
+      expirationDate: 1,
+      name: 'x',
+      value: 'y',
+    },
+  ]);
+
+  assert.ok(result.endsWith('\n'));
+});

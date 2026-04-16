@@ -22,3 +22,16 @@ test('buildOriginPermissionPattern skips unsupported urls', () => {
   assert.equal(buildOriginPermissionPattern('file:///Users/me/demo.html'), '');
   assert.equal(buildOriginPermissionPattern('not-a-url'), '');
 });
+
+test('buildOriginPermissionPattern returns empty for null, undefined, and empty string', () => {
+  assert.equal(buildOriginPermissionPattern(null), '');
+  assert.equal(buildOriginPermissionPattern(undefined), '');
+  assert.equal(buildOriginPermissionPattern(''), '');
+});
+
+test('buildOriginPermissionPattern preserves port in the pattern', () => {
+  assert.equal(
+    buildOriginPermissionPattern('https://app.example.com:8443/page'),
+    'https://app.example.com:8443/*',
+  );
+});

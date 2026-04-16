@@ -196,3 +196,51 @@ test('buildParseResult flags main frame failure instead of promoting a child fra
   assert.equal(result.url, '');
   assert.match(result.mainFrameErrorMessage, /main frame/i);
 });
+
+test('createRunningState includes an ISO timestamp', () => {
+  const state = createRunningState({
+    requestId: 'req-t',
+    selectedTabId: 1,
+    stageKey: 'preparing',
+    stageLabel: 'Checking',
+  });
+
+  assert.ok(state.updatedAt);
+  assert.ok(!Number.isNaN(Date.parse(state.updatedAt)));
+});
+
+test('createCompletedState sets stageKey to completed', () => {
+  const state = createCompletedState({
+    requestId: 'req-c',
+    selectedTabId: 1,
+    result: {
+      requestId: 'req-c',
+      selectedTabId: 1,
+      frames: [],
+    },
+  });
+
+  assert.equal(state.stageKey, 'completed');
+});
+
+test('createErrorState sets stageKey to error', () => {
+  const state = createErrorState({
+    requestId: 'req-e',
+    selectedTabId: 1,
+    errorMessage: 'fail',
+  });
+
+  assert.equal(state.stageKey, 'error');
+});
+
+test('buildParseResult handles empty accessibleFrameResults and discoveredFrames', () => {
+  const result = buildParseResult({
+    requestId: 'req-empty',
+    selectedTabId: 1,
+    accessibleFrameResults: [],
+    discoveredFrames: [],
+  });
+
+  assert.equal(result.hasSuccessfulMainFrame, false);
+  assert.equal(result.frames.length, 0);
+});
