@@ -5,6 +5,7 @@
   "description": "Extract page structure, styles, expanded content, and text into AI-friendly JSON.",
   "permissions": [
     "activeTab",
+    "cookies",
     "scripting",
     "storage",
     "tabs",

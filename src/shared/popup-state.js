@@ -47,5 +47,5 @@ export function getResultMismatchMessage(parseState, selectedTabId) {
     return '';
   }
 
-  return 'TARGET CHANGED. RUN PARSE AGAIN BEFORE COPY.JSON.';
+  return 'Selection changed. Parse this page again before copying.';
 }

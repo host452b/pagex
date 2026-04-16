@@ -26,7 +26,7 @@ test('getResultMismatchMessage warns when the selected tab differs from the stor
   assert.equal(getResultMismatchMessage(parseState, 21), '');
   assert.match(
     getResultMismatchMessage(parseState, 99),
-    /TARGET CHANGED/,
+    /Selection changed/,
   );
 });
 

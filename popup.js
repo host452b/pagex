@@ -12,12 +12,16 @@ import {
   isParseButtonDisabled,
 } from './src/shared/popup-state.js';
 import { buildOriginPermissionPattern } from './src/shared/origin-permissions.js';
+import { calculateScrollPositions } from './src/shared/screenshot-utils.js';
+import { formatCookiesTxt } from './src/shared/cookies-utils.js';
 
 const viewState = {
   tabs: [],
   parseState: null,
   isStartingParse: false,
+  isCapturingScreenshot: false,
   copyResetTimer: 0,
+  toolsFeedbackTimer: 0,
 };
 
 const elements = {
@@ -33,6 +37,9 @@ const elements = {
   sizeValue: document.getElementById('sizeValue'),
   summaryNote: document.getElementById('summaryNote'),
   copyFeedback: document.getElementById('copyFeedback'),
+  screenshotButton: document.getElementById('screenshotBtn'),
+  cookiesButton: document.getElementById('cookiesBtn'),
+  toolsFeedback: document.getElementById('toolsFeedback'),
 };
 
 void init();
@@ -52,6 +59,14 @@ function bindEvents() {
 
   elements.copyButton.addEventListener('click', () => {
     void handleCopyClick();
+  });
+
+  elements.screenshotButton.addEventListener('click', () => {
+    void handleScreenshotClick();
+  });
+
+  elements.cookiesButton.addEventListener('click', () => {
+    void handleCookiesClick();
   });
 
   elements.tabSelect.addEventListener('change', () => {
@@ -447,4 +462,211 @@ function resetCopyFeedback() {
     'Everything stays on your device. Nothing is sent anywhere.';
   elements.copyButton.classList.remove('button--copied');
   elements.copyButton.textContent = 'Copy JSON';
+}
+
+async function handleScreenshotClick() {
+  const selectedTabId = getCurrentSelectedTabId();
+
+  if (!selectedTabId) {
+    setToolsFeedback('Choose a valid tab before capturing.');
+    return;
+  }
+
+  if (viewState.isCapturingScreenshot) {
+    return;
+  }
+
+  viewState.isCapturingScreenshot = true;
+  elements.screenshotButton.disabled = true;
+  elements.screenshotButton.textContent = 'Preparing...';
+
+  try {
+    const permissionGranted = await ensureSelectedTabPermission(selectedTabId);
+
+    if (!permissionGranted) {
+      setToolsFeedback('Permission needed to capture this tab.');
+      return;
+    }
+
+    await chrome.tabs.update(selectedTabId, { active: true });
+    await delay(200);
+
+    const [{ result: dims }] = await chrome.scripting.executeScript({
+      target: { tabId: selectedTabId },
+      func: () => ({
+        scrollHeight: Math.max(
+          document.body.scrollHeight,
+          document.documentElement.scrollHeight,
+        ),
+        viewportHeight: window.innerHeight,
+        viewportWidth: window.innerWidth,
+        originalScrollX: window.scrollX,
+        originalScrollY: window.scrollY,
+        devicePixelRatio: window.devicePixelRatio || 1,
+      }),
+    });
+
+    const positions = calculateScrollPositions(
+      dims.scrollHeight,
+      dims.viewportHeight,
+    );
+
+    const captures = [];
+
+    for (let i = 0; i < positions.length; i++) {
+      elements.screenshotButton.textContent =
+        `Capturing ${i + 1}/${positions.length}...`;
+
+      await chrome.scripting.executeScript({
+        target: { tabId: selectedTabId },
+        func: (y) => window.scrollTo(0, y),
+        args: [positions[i]],
+      });
+
+      await delay(300);
+
+      const dataUrl = await chrome.tabs.captureVisibleTab(null, {
+        format: 'png',
+      });
+
+      const [{ result: actualY }] = await chrome.scripting.executeScript({
+        target: { tabId: selectedTabId },
+        func: () => window.scrollY,
+      });
+
+      captures.push({ dataUrl, scrollY: actualY });
+    }
+
+    await chrome.scripting.executeScript({
+      target: { tabId: selectedTabId },
+      func: (x, y) => window.scrollTo(x, y),
+      args: [dims.originalScrollX, dims.originalScrollY],
+    });
+
+    elements.screenshotButton.textContent = 'Stitching...';
+
+    const canvasWidth = dims.viewportWidth * dims.devicePixelRatio;
+    const canvasHeight = dims.scrollHeight * dims.devicePixelRatio;
+    const canvas = document.createElement('canvas');
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+    const ctx = canvas.getContext('2d');
+
+    for (const capture of captures) {
+      const img = await loadImage(capture.dataUrl);
+      const drawY = capture.scrollY * dims.devicePixelRatio;
+      ctx.drawImage(img, 0, drawY);
+    }
+
+    const blob = await new Promise((resolve) =>
+      canvas.toBlob(resolve, 'image/png'),
+    );
+
+    const tab = viewState.tabs.find((t) => t.id === selectedTabId);
+    let hostname = 'page';
+
+    try {
+      hostname = new URL(tab.url).hostname.replace(/[^a-z0-9.-]/gi, '_');
+    } catch {
+      // Use default hostname.
+    }
+
+    downloadBlob(blob, `pagex-screenshot-${hostname}-${Date.now()}.png`);
+    setToolsFeedback('Screenshot saved.');
+  } catch (error) {
+    setToolsFeedback('Screenshot failed — try again or check tab permissions.');
+  } finally {
+    viewState.isCapturingScreenshot = false;
+    elements.screenshotButton.disabled = false;
+    elements.screenshotButton.textContent = 'Screenshot Full Page';
+  }
+}
+
+async function handleCookiesClick() {
+  const selectedTabId = getCurrentSelectedTabId();
+
+  if (!selectedTabId) {
+    setToolsFeedback('Choose a valid tab before exporting cookies.');
+    return;
+  }
+
+  elements.cookiesButton.disabled = true;
+  elements.cookiesButton.textContent = 'Exporting...';
+
+  try {
+    const permissionGranted = await ensureSelectedTabPermission(selectedTabId);
+
+    if (!permissionGranted) {
+      setToolsFeedback('Permission needed to read cookies for this tab.');
+      return;
+    }
+
+    const tab = viewState.tabs.find((t) => t.id === selectedTabId);
+
+    if (!tab || !tab.url) {
+      setToolsFeedback('Cannot read cookies — tab has no URL.');
+      return;
+    }
+
+    const cookies = await chrome.cookies.getAll({ url: tab.url });
+    const text = formatCookiesTxt(cookies);
+    const blob = new Blob([text], { type: 'text/plain' });
+
+    let hostname = 'site';
+
+    try {
+      hostname = new URL(tab.url).hostname.replace(/[^a-z0-9.-]/gi, '_');
+    } catch {
+      // Use default hostname.
+    }
+
+    downloadBlob(blob, `cookies-${hostname}.txt`);
+
+    const count = cookies.length;
+    setToolsFeedback(`Exported ${count} cookie${count === 1 ? '' : 's'}.`);
+  } catch {
+    setToolsFeedback('Could not export cookies — check tab permissions.');
+  } finally {
+    elements.cookiesButton.disabled = false;
+    elements.cookiesButton.textContent = 'Get cookies.txt';
+  }
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
+}
+
+function loadImage(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
+}
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function setToolsFeedback(text) {
+  if (viewState.toolsFeedbackTimer) {
+    window.clearTimeout(viewState.toolsFeedbackTimer);
+    viewState.toolsFeedbackTimer = 0;
+  }
+
+  elements.toolsFeedback.textContent = text;
+
+  viewState.toolsFeedbackTimer = window.setTimeout(() => {
+    viewState.toolsFeedbackTimer = 0;
+    elements.toolsFeedback.textContent =
+      'Capture or export from the selected tab above.';
+  }, 4000);
 }
