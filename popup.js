@@ -20,6 +20,7 @@ const viewState = {
   parseState: null,
   isStartingParse: false,
   isCapturingScreenshot: false,
+  stopRequested: false,
   copyResetTimer: 0,
   toolsFeedbackTimer: 0,
 };
@@ -84,6 +85,12 @@ function bindEvents() {
     }
 
     if (!changes[PAGEX_STATE_KEY]) {
+      return;
+    }
+
+    // After the user clicks Stop, ignore state updates from the background
+    // parse that is still winding down. Reset when a new parse starts.
+    if (viewState.stopRequested) {
       return;
     }
 
@@ -364,6 +371,7 @@ async function handleParseClick() {
   }
 
   viewState.isStartingParse = true;
+  viewState.stopRequested = false;
   elements.app.dataset.status = 'running';
   elements.statusText.textContent = 'Starting';
   elements.detailText.textContent =
@@ -410,14 +418,8 @@ async function handleParseClick() {
 }
 
 async function handleStopClick() {
-  try {
-    await chrome.runtime.sendMessage({
-      type: PAGEX_MESSAGE_TYPES.STOP_PARSE,
-    });
-  } catch {
-    // Background may not respond — force local reset.
-  }
-
+  // Immediately reset local state so the UI responds without waiting.
+  viewState.stopRequested = true;
   viewState.parseState = null;
   viewState.isStartingParse = false;
   elements.app.dataset.status = 'idle';
@@ -425,6 +427,15 @@ async function handleStopClick() {
   elements.detailText.textContent =
     'Extraction stopped. Click "Extract Page" to try again.';
   render();
+
+  // Tell background to release the single-flight lock so a retry can start.
+  try {
+    await chrome.runtime.sendMessage({
+      type: PAGEX_MESSAGE_TYPES.STOP_PARSE,
+    });
+  } catch {
+    // Background may not respond — local reset already done above.
+  }
 }
 
 async function ensureSelectedTabPermission(selectedTabId) {
